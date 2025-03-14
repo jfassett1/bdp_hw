@@ -3,7 +3,9 @@ import numpy as np
 from pyspark.sql.functions import sum
 import matplotlib.pyplot as plt
 from time import time
+from pathlib import Path
 
+save_dir = Path(__file__).parent
 spark = SparkSession.builder.appName("PiSim").getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
@@ -11,20 +13,18 @@ times = []
 num_steps = [1000,1000,10_000,100_000,1_000_000]
 pi_estimates = []
 spark.range(15).count()
-for i,N in enumerate(num_steps):
+for i, N in enumerate(num_steps):
     start = time()
-    area = np.linspace(0,1,N)
-    area = [(i,float(x)) for i,x in enumerate(area)]
-    df = spark.createDataFrame(area,["Index",'X_vals'])
 
-    df = df.select(df.X_vals, (1/(1+(df.X_vals**2))).alias('sums'))
+    rdd = spark.sparkContext.parallelize(np.linspace(0, 1, N), numSlices=2).map(
+        lambda x: 1 / (1 + x**2)
+    )
 
-    df = df.agg(sum('sums'))
+    val = rdd.sum()
 
-    val = df.first()[0]
+    val *= 4 / N
 
-    val *= 4/N
-    if i != 0: # For some reason the first iteration takes the longest. Likely due to spark overhead. So I'm adding a dummy time to get a better understanding.
+    if i != 0:  # Ignore first iteration for better benchmarking
         times.append(time() - start)
         pi_estimates.append(val)
 spark.stop() #Stopping to avoid print spam
@@ -37,7 +37,7 @@ plt.title("Time per calculation")
 plt.xlabel("# of steps")
 plt.ylabel("Time (seconds)")
 plt.bar(x=[str(n) + " steps" for n in num_steps],height=times)
-plt.savefig("/home/ubuntu/hw3/performance.png")
+plt.savefig(save_dir/"performance.png")
 
 
 
