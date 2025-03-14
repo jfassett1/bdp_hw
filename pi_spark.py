@@ -40,3 +40,4 @@ plt.bar(x=[str(n) + " steps" for n in num_steps],height=times)
 plt.savefig("/home/ubuntu/hw3/performance.png")
 
 
+
