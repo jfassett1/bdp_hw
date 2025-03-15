@@ -24,7 +24,7 @@ for i, N in enumerate(num_steps):
 
     val *= 4 / N
 
-    if i != 0:  # Ignore first iteration for better benchmarking
+    if i != 0:  # Ignoring the dummy loop
         times.append(time() - start)
         pi_estimates.append(val)
 spark.stop() #Stopping to avoid print spam
